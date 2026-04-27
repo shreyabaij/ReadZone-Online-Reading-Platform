@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ReadZone - Admin</title>
+  <link rel="stylesheet" href="assets/css/main.css?v=1.1" />
+  <link rel="stylesheet" href="assets/css/components.css?v=1.1" />
+  <style>
+    .admin-layout {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      width: 250px;
+      background: var(--bg-surface);
+      border-right: 1px solid var(--border);
+      padding: 2rem;
+      position: fixed;
+      height: 100%;
+    }
+
+    .content {
+      flex: 1;
+      margin-left: 250px;
+      padding: 2rem;
+      background: var(--bg-app);
+    }
+
+    .nav-item {
+      display: block;
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-sm);
+      margin-bottom: 0.5rem;
+      transition: background 0.2s;
+      cursor: pointer;
+    }
+
+    .nav-item:hover,
+    .nav-item.active {
+      background: var(--bg-app);
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--bg-surface);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+
+    th,
+    td {
+      padding: 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      background: #f1f5f9;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover {
+      background: #f8fafc;
+    }
+
+    .tab-panel {
+      display: none;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="admin-layout">
+    <aside class="sidebar">
+      <h2 class="font-serif text-xl" style="margin-bottom: 2rem">
+        ReadZone Admin
+      </h2>
+      <nav>
+        <div class="nav-item active" onclick="showTab('books')">Books</div>
+        <div class="nav-item" onclick="showTab('reviews')">Moderation</div>
+        <div class="nav-item" onclick="showTab('users')">Users</div>
+        <div class="nav-item" onclick="showTab('logs')">Logs</div>
+        <div style="border-top: 1px solid var(--border); margin: 1rem 0"></div>
+        <a href="reader_dashboard.html" class="nav-item" style="color: var(--primary)">📚 View as Reader</a>
+        <div class="nav-item" onclick="logout()" style="color: var(--danger)">
+          Logout
+        </div>
+      </nav>
+    </aside>
+
+    <main class="content">
+      <!-- BOOKS TAB -->
+      <div id="books" class="tab-panel active">
+        <div class="flex justify-between items-center" style="margin-bottom: 1.5rem">
+          <h1 class="text-2xl">Library Management</h1>
+          <div class="flex gap-2">
+            <input type="text" placeholder="Search title..." onkeyup="loadBooks(this.value)" style="width: 250px" />
+            <button class="btn btn-primary" onclick="toggleAddBook()">
+              + Add Book
+            </button>
+          </div>
+        </div>
+
+        <!-- Add Book Form (Toggleable) -->
+        <div id="add-book-card" class="card hidden" style="margin-bottom: 2rem">
+          <h3 id="form-title">New Book</h3>
+          <form id="add-book-form">
+            <input type="hidden" name="id" id="book-id" />
+            <div class="input-group">
+              <input type="text" name="title" placeholder="Book Title" required />
+            </div>
+            <div class="input-group">
+              <input type="text" name="author" placeholder="Author" required />
+            </div>
+            <div class="input-group">
+              <textarea name="description" placeholder="Short description"></textarea>
+            </div>
+            <div class="input-group">
+              <input type="text" name="categories"
+                placeholder="Categories (e.g. Fiction, Science Fiction, Technology)" />
+            </div>
+            <div class="input-group">
+              <label class="input-label">Content (PDF)
+                <span class="text-xs text-muted">(Leave empty if editing to keep current)</span></label>
+              <input type="file" name="book_file" accept=".pdf" id="file-req-1" required />
+            </div>
+            <div class="input-group">
+              <label class="input-label">Cover Image
+                <span class="text-xs text-muted">(Leave empty if editing to keep current)</span></label>
+              <input type="file" name="cover_file" accept="image/*" id="file-req-2" required />
+            </div>
+            <input type="hidden" name="action" id="form-action" value="add" />
+            <div class="flex gap-2">
+              <button type="submit" class="btn btn-primary">Save Book</button>
+              <button type="button" class="btn btn-outline" onclick="toggleAddBook(true)">
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div class="card" style="padding: 0">
+          <table>
+            <thead>
+              <tr>
+                <th>Cover</th>
+                <th>Title</th>
+                <th>Author</th>
+                <th>Added</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="books-table">
+              <tr>
+                <td colspan="4" class="text-center text-muted">Loading...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- REVIEWS TAB -->
+      <div id="reviews" class="tab-panel">
+        <h1 class="text-2xl" style="margin-bottom: 1.5rem">
+          Review Moderation
+        </h1>
+        <div class="card" style="padding: 0">
+          <table>
+            <thead>
+              <tr>
+                <th>Review Details</th>
+                <th>Reviewer</th>
+                <th>Reporter</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="reviews-table"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- USERS TAB -->
+      <div id="users" class="tab-panel">
+        <div class="flex justify-between items-center" style="margin-bottom: 1.5rem">
+          <h1 class="text-2xl">User Management</h1>
+          <input type="text" placeholder="Search user..." onkeyup="loadUsers(this.value)" style="width: 300px" />
+        </div>
+        <div class="card" style="padding: 0">
+          <table>
+            <thead>
+              <tr>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="users-table"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- LOGS TAB -->
+      <div id="logs" class="tab-panel">
+        <h1 class="text-2xl" style="margin-bottom: 1.5rem">System Logs</h1>
+        <div class="card" style="padding: 0">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Admin</th>
+                <th>Details</th>
+              </tr>
+            </thead>
+            <tbody id="logs-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="assets/js/api.js?v=1.1"></script>
+  <script>
+    checkAuth("admin");
+
+    function showTab(id) {
+      document
+        .querySelectorAll(".tab-panel")
+        .forEach((p) => p.classList.remove("active"));
+      document
+        .querySelectorAll(".nav-item")
+        .forEach((n) => n.classList.remove("active"));
+      document.getElementById(id).classList.add("active");
+      event.target.classList.add("active");
+
+      if (id === "books") loadBooks();
+      if (id === "reviews") loadReviews();
+      if (id === "users") loadUsers();
+      if (id === "logs") loadLogs();
+    }
+
+    function toggleAddBook(reset = true) {
+      const card = document.getElementById("add-book-card");
+      card.classList.toggle("hidden");
+      if (reset && !card.classList.contains("hidden")) {
+        // If opening new, reset
+        document.getElementById("add-book-form").reset();
+        document.getElementById("form-action").value = "add";
+        document.getElementById("form-title").textContent = "New Book";
+        document.getElementById("file-req-1").required = true;
+        document.getElementById("file-req-2").required = true;
+      }
+    }
+
+    // --- Data Loaders ---
+
+    async function loadBooks(q = "") {
+      try {
+        const data = await apiCall(`/reader/books.php?title=${encodeURIComponent(q)}`);
+        const tb = document.getElementById("books-table");
+        if (!data.books || data.books.length === 0) {
+          tb.innerHTML =
+            '<tr><td colspan="5" class="text-center">No books found</td></tr>';
+          return;
+        }
+        window.allBooks = data.books; // quick hack store
+
+        tb.innerHTML = data.books
+          .map(
+            (b) => `
+                    <tr>
+                        <td><img src="/readzone/${b.cover_path}" style="height: 40px; w: auto;" onerror="this.src='https://placehold.co/30x40'"></td>
+                        <td>${b.title}</td>
+                        <td>${b.author}</td>
+                        <td>${b.created_at}</td>
+                        <td class="flex gap-2">
+                             <button class="btn btn-outline btn-sm" onclick="editBook(${b.id})">Edit</button>
+                             <button class="btn btn-danger btn-sm" onclick="deleteBook(${b.id})">Delete</button>
+                        </td>
+                    </tr>
+                `,
+          )
+          .join("");
+      } catch (e) { }
+    }
+
+    async function editBook(id) {
+      const book = window.allBooks.find((b) => b.id == id);
+      if (!book) return;
+
+      document.getElementById("add-book-card").classList.remove("hidden");
+
+      const form = document.getElementById("add-book-form");
+      form.querySelector('[name="title"]').value = book.title;
+      form.querySelector('[name="author"]').value = book.author;
+      form.querySelector('[name="description"]').value =
+        book.description || "";
+      form.querySelector('[name="categories"]').value = book.categories || "";
+      document.getElementById("book-id").value = book.id;
+      document.getElementById("form-action").value = "update";
+      document.getElementById("form-title").textContent = "Edit Book";
+
+      // Files optional on edit
+      document.getElementById("file-req-1").required = false;
+      document.getElementById("file-req-2").required = false;
+
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    // ... LoadReviews, LoadUsers, etc unchanged
+
+    async function loadReviews() {
+      // ... existing code ...
+      try {
+        const data = await apiCall("/admin/reviews.php?action=list_reported");
+        const tb = document.getElementById("reviews-table");
+        if (data.length === 0) {
+          tb.innerHTML =
+            '<tr><td colspan="4" class="text-center">No reports active</td></tr>';
+          return;
+        }
+        tb.innerHTML = data
+          .map(
+            (r) => `
+                    <tr>
+                        <td style="max-width:300px;">
+                            <div class="text-sm font-serif">"${r.review_text}"</div>
+                            <div class="text-xs text-muted" style="margin-top:4px;">Book: <span class="font-bold">${r.book_title}</span></div>
+                        </td>
+                        <td>
+                            <div>${r.reviewer_username}</div>
+                            <div class="text-xs text-muted">Original Author</div>
+                        </td>
+                        <td>
+                            <div>${r.reported_by_username}</div>
+                            <div class="text-xs text-muted">Reporter</div>
+                        </td>
+                        <td class="flex gap-2">
+                             <button class="btn btn-outline" style="color:var(--success)" onclick="modReview(${r.review_id}, 'approve')">Keep</button>
+                             <button class="btn btn-danger" onclick="modReview(${r.review_id}, 'delete')">Remove</button>
+                        </td>
+                    </tr>
+                `,
+          )
+          .join("");
+      } catch (e) { }
+    }
+
+    // loadUsers etc ...
+    async function loadUsers(q = "") {
+      // ... existing code ...
+      try {
+        const data = await apiCall(
+          `/admin/users.php?action=list&username=${encodeURIComponent(q)}`,
+        );
+        const tb = document.getElementById("users-table");
+        tb.innerHTML = data
+          .map((u) => {
+            const isSuspended =
+              u.timeout_until && new Date(u.timeout_until) > new Date();
+            return `
+                    <tr>
+                         <td>${u.username}</td>
+                         <td>${u.email}</td>
+                         <td>${isSuspended ? '<span style="color:red">Suspended (Until ' + u.timeout_until + ")</span>" : '<span style="color:green">Active</span>'}</td>
+                         <td>
+                            <button class="btn btn-outline btn-sm" onclick="timeoutUser(${u.id})">Suspend 24h</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteUser(${u.id})">Delete</button>
+                         </td>
+                    </tr>
+                    `;
+          })
+          .join("");
+      } catch (e) { }
+    }
+
+    async function loadLogs() {
+      // ... existing code ...
+      try {
+        const data = await apiCall("/admin/logs.php");
+        const tb = document.getElementById("logs-table");
+        tb.innerHTML = data
+          .map(
+            (l) =>
+              `<tr><td>${l.created_at}</td><td>${l.username}</td><td>${l.action}</td></tr>`,
+          )
+          .join("");
+      } catch (e) { }
+    }
+
+    // --- Actions ---
+
+    document
+      .getElementById("add-book-form")
+      .addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        try {
+          const response = await fetch(API_BASE + "/admin/books.php", {
+            method: "POST",
+            body: formData,
+            credentials: "include",
+          });
+          const res = await response.json();
+          if (!response.ok) throw new Error(res.error || "Upload failed");
+
+          showToast(res.message, "success");
+          e.target.reset();
+          toggleAddBook(true); // Close and reset
+          loadBooks();
+        } catch (e) {
+          showToast(e.message, "error");
+        }
+      });
+
+    async function deleteBook(id) {
+      if (!confirm("Delete this book?")) return;
+      try {
+        await apiCall("/admin/books.php", "POST", { action: "delete", id });
+        loadBooks();
+        showToast("Book deleted", "success");
+      } catch (e) { }
+    }
+
+    async function modReview(id, action) {
+      try {
+        await apiCall(`/admin/reviews.php?action=${action}`, "POST", {
+          review_id: id,
+        });
+        loadReviews();
+        showToast(
+          `Review ${action === "delete" ? "removed" : "approved"}`,
+          "success",
+        );
+      } catch (e) { }
+    }
+
+    async function timeoutUser(id) {
+      if (!confirm("Suspend this user for 24 hours?")) return;
+      try {
+        await apiCall("/admin/users.php?action=timeout", "POST", { id });
+        loadUsers();
+        showToast("User suspended for 24 hours", "success");
+      } catch (e) { }
+    }
+
+    async function deleteUser(id) {
+      if (!confirm("PERMANENTLY delete this user account?")) return;
+      try {
+        await apiCall("/admin/users.php?action=delete", "POST", { id });
+        loadUsers();
+        showToast("User deleted", "success");
+      } catch (e) { }
+    }
+
+    loadBooks();
+  </script>
+</body>
+
+</html>

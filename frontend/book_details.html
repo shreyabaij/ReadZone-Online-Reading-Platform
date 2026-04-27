@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ReadZone - Book Details</title>
+    <link rel="stylesheet" href="assets/css/main.css?v=1.1">
+    <link rel="stylesheet" href="assets/css/components.css?v=1.1">
+    <style>
+        .details-layout {
+            display: flex;
+            gap: 3rem;
+            margin-top: 2rem;
+        }
+
+        .details-cover {
+            width: 300px;
+            border-radius: 8px;
+            box-shadow: var(--shadow-md);
+        }
+
+        .details-info {
+            flex: 1;
+        }
+
+        .meta-tag {
+            display: inline-block;
+            padding: 4px 12px;
+            background: #eee;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            margin-right: 10px;
+            color: #555;
+        }
+
+        .reviews-section {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .review-card {
+            padding: 1rem;
+            background: var(--bg-surface);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            margin-bottom: 1rem;
+        }
+
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+
+<body>
+    <header class="navbar">
+        <div class="container nav-inner">
+            <div class="flex items-center gap-4">
+                <a href="reader_dashboard.html" class="text-muted hover:text-primary" style="font-size: 1.2rem;">←</a>
+                <a href="reader_dashboard.html" class="nav-brand">ReadZone</a>
+            </div>
+            <div style="flex: 1;"></div>
+            <nav class="nav-links text-sm">
+                <a href="reader_dashboard.html">Browse</a>
+                <a href="my_books.html">My Library</a>
+                <a href="my_lists.html">My Lists</a>
+                <div class="nav-divider"></div>
+                <a href="admin_dashboard.html" id="admin-link" class="hidden"
+                    style="color: var(--primary); font-weight: 600;">⚙️ Admin</a>
+                <a href="profile.html" id="nav-username" class="font-bold"></a>
+                <a href="#" onclick="logout()" class="text-xs text-muted">Logout</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container" style="padding: 2rem 20px;">
+        <div id="loading" class="text-center" style="padding: 4rem;">Loading details...</div>
+
+        <div id="book-content" class="details-layout hidden">
+            <div style="flex-shrink: 0;">
+                <img id="cover-img" src="" class="details-cover"
+                    onerror="this.src='https://placehold.co/300x450?text=No+Cover'">
+                <div class="flex gap-2"
+                    style="margin-top: 1.5rem; justify-content: center; flex-direction: column; gap: 10px;">
+                    <a id="read-btn" class="btn btn-primary" style="width: 100%; text-align: center;">Read Book</a>
+                    <button id="action-btn" class="btn btn-outline" style="width: 100%;" onclick="saveBook()">Save to
+                        Library</button>
+                    <button class="btn btn-outline" style="width: 100%;" onclick="toggleListModal()">+ Add to
+                        List</button>
+                </div>
+            </div>
+
+            <div class="details-info">
+                <h1 id="book-title" class="font-serif text-2xl" style="margin-bottom: 0.5rem;"></h1>
+                <p id="book-author" class="text-xl text-muted" style="margin-bottom: 1.5rem;"></p>
+
+                <div style="margin-bottom: 2rem;">
+                    <div class="meta-tag" id="book-cat"></div>
+                    <span class="text-muted text-sm">Added on <span id="book-date"></span></span>
+                </div>
+
+                <h3 class="font-serif text-xl" style="margin-bottom: 1rem;">About this book</h3>
+                <p id="book-desc" style="line-height: 1.8; color: var(--text-main); margin-bottom: 2rem;"></p>
+            </div>
+        </div>
+
+        <div class="reviews-section">
+            <h3 class="font-serif text-xl" style="margin-bottom: 1.5rem;">Reviews</h3>
+
+            <!-- Add Review -->
+            <div class="card" style="margin-bottom: 2rem;">
+                <h4 style="margin-bottom: 1rem;">Write a Review</h4>
+                <form id="review-form">
+                    <textarea id="review-text" rows="3" placeholder="What did you think?" required
+                        style="margin-bottom: 1rem;"></textarea>
+                    <button type="submit" class="btn btn-primary">Post Review</button>
+                </form>
+            </div>
+
+            <div id="reviews-list"></div>
+        </div>
+    </main>
+
+    <!-- Add to List Modal -->
+    <div id="list-modal" class="modal hidden"
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 100;">
+        <div class="modal-content"
+            style="background: var(--bg-surface); padding: 2rem; border-radius: 12px; width: 90%; max-width: 400px;">
+            <h3 class="text-xl mb-4" style="margin-bottom: 1rem;">Add to List</h3>
+            <div id="modal-lists-container"
+                style="display: flex; flex-direction: column; gap: 10px; max-height: 300px; overflow-y: auto;">
+                Loading...
+            </div>
+            <div class="flex justify-end gap-2" style="margin-top: 1.5rem;">
+                <button class="btn btn-outline" onclick="toggleListModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="assets/js/api.js?v=1.1"></script>
+    <script>
+        checkAuth('reader');
+        initNavbar();
+        const bookId = new URLSearchParams(window.location.search).get('id');
+        if (!bookId) window.location.href = 'reader_dashboard.html';
+
+        let currentBook = null;
+
+        async function init() {
+            try {
+                // Fetch Details
+                const res = await apiCall(`/reader/books.php?id=${bookId}`);
+                if (!res.books || res.books.length === 0) throw new Error('Book not found');
+
+                const book = res.books[0];
+                currentBook = book;
+
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('book-content').classList.remove('hidden');
+
+                document.title = `${book.title} - ReadZone`;
+                document.getElementById('book-title').textContent = book.title;
+                document.getElementById('book-author').textContent = book.author;
+                document.getElementById('book-desc').textContent = book.description || 'No description available.';
+                document.getElementById('book-cat').textContent = book.categories || 'General';
+                document.getElementById('book-date').textContent = new Date(book.created_at).toLocaleDateString();
+                document.getElementById('cover-img').src = `/readzone/${book.cover_path}`;
+                document.getElementById('read-btn').href = `reader.html?id=${book.id}&title=${encodeURIComponent(book.title)}`; // Add Link
+
+                // Check if already saved
+                checkSavedStatus();
+
+                // Load Reviews
+                loadReviews();
+
+            } catch (e) {
+                document.getElementById('loading').textContent = e.message;
+            }
+        }
+
+        async function checkSavedStatus() {
+            try {
+                // Fetch saved books (implicitly filters in_library=1)
+                const saved = await apiCall('/reader/saved_books.php');
+                const isSaved = saved.some(b => b.book_id == bookId);
+                updateSaveButton(isSaved);
+            } catch (e) { }
+        }
+
+        function updateSaveButton(isSaved) {
+            const btn = document.getElementById('action-btn');
+            // Remove any old event listeners (by cloning or just overwriting onclick)
+            // Simpler to just overwrite attributes
+            if (isSaved) {
+                btn.textContent = 'Remove from Library';
+                btn.onclick = removeBook;
+                btn.className = 'btn btn-danger';
+                btn.style.backgroundColor = '#ef4444';
+                btn.style.borderColor = '#ef4444';
+                btn.style.color = '#ffffff'; // Fix visibility
+            } else {
+                btn.textContent = 'Save to Library';
+                btn.onclick = saveBook;
+                btn.className = 'btn btn-outline'; // Changed to outline to contrast Read button
+                btn.style.backgroundColor = ''; // Reset
+                btn.style.borderColor = '';
+                btn.style.color = '';
+            }
+        }
+
+        async function saveBook() {
+            try {
+                await apiCall('/reader/saved_books.php?action=add', 'POST', { book_id: bookId });
+                showToast('Saved to library', 'success');
+                updateSaveButton(true);
+            } catch (e) { }
+        }
+
+        async function removeBook() {
+            if (!confirm("Remove from library? Reading progress will be lost.")) return;
+            try {
+                await apiCall('/reader/saved_books.php?action=remove', 'POST', { book_id: bookId });
+                showToast('Removed from library', 'success');
+                updateSaveButton(false);
+            } catch (e) { }
+        }
+
+        async function loadReviews() {
+            try {
+                const reviews = await apiCall(`/reader/reviews.php?book_id=${bookId}`);
+                const list = document.getElementById('reviews-list');
+
+                if (reviews.length === 0) {
+                    list.innerHTML = '<div class="text-muted">No reviews yet. Be the first!</div>';
+                    return;
+                }
+
+                list.innerHTML = reviews.map(r => `
+                    <div class="review-card">
+                        <div class="review-header">
+                            <span class="font-bold">${r.username}</span>
+                            <span class="text-sm text-muted">${new Date(r.created_at).toLocaleDateString()}</span>
+                        </div>
+                        <p>${r.review_text}</p>
+                        <div style="margin-top:0.5rem; text-align:right;">
+                             <button class="btn btn-outline" style="font-size:0.8rem; padding: 2px 8px;" onclick="reportReview(${r.id})">Report</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (e) { }
+        }
+
+        document.getElementById('review-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const text = document.getElementById('review-text').value;
+            try {
+                await apiCall('/reader/reviews.php', 'POST', {
+                    book_id: bookId,
+                    review_text: text
+                });
+                showToast('Review posted', 'success');
+                document.getElementById('review-text').value = '';
+                loadReviews();
+            } catch (e) { }
+        });
+
+        async function reportReview(id) {
+            if (!confirm('Report this review?')) return;
+            try {
+                await apiCall('/reader/reviews.php?action=report', 'POST', { review_id: id });
+                showToast('Review reported', 'success');
+            } catch (e) { }
+        }
+
+        async function toggleListModal() {
+            const modal = document.getElementById('list-modal');
+
+            // Auto-save check
+            if (modal.classList.contains('hidden')) { // Opening
+                const btn = document.getElementById('action-btn');
+                if (btn.textContent.includes('Save')) {
+                    try {
+                        await apiCall('/reader/saved_books.php?action=add', 'POST', { book_id: bookId });
+                        updateSaveButton(true);
+                        showToast('Book automatically saved', 'success');
+                    } catch (e) { }
+                }
+            }
+
+            modal.classList.toggle('hidden');
+            if (!modal.classList.contains('hidden')) {
+                loadUserLists();
+            }
+        }
+
+        async function loadUserLists() {
+            try {
+                const lists = await apiCall('/reader/lists.php?action=get_lists');
+                const container = document.getElementById('modal-lists-container');
+                if (lists.length === 0) {
+                    container.innerHTML = '<div>No lists found. <a href="my_lists.html" style="color:var(--primary)">Create one</a></div>';
+                    return;
+                }
+                container.innerHTML = lists.map(l => `
+                    <button class="btn btn-outline" style="text-align:left; justify-content: flex-start;" onclick="addToList(${l.id})">
+                        ${l.title}
+                    </button>
+                `).join('');
+            } catch (e) {
+                document.getElementById('modal-lists-container').innerHTML = 'Error loading lists';
+            }
+        }
+
+        async function addToList(listId) {
+            try {
+                await apiCall('/reader/lists.php', 'POST', { action: 'add_book', list_id: listId, book_id: bookId });
+                showToast('Added to list', 'success');
+                toggleListModal();
+            } catch (e) { }
+        }
+
+        init();
+    </script>
+</body>
+
+</html>

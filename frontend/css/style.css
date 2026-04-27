@@ -1,0 +1,16 @@
+/* frontend/css/style.css */
+body { font-family: sans-serif; max-width: 800px; margin: 20px auto; padding: 0 20px; }
+h1, h2 { color: #333; }
+nav a { margin-right: 15px; text-decoration: none; color: #007bff; }
+nav a:hover { text-decoration: underline; }
+.card { border: 1px solid #ddd; padding: 15px; margin-bottom: 10px; border-radius: 5px; }
+input, select, textarea { display: block; width: 100%; margin: 5px 0 15px; padding: 8px; box-sizing: border-box; }
+button { padding: 10px 15px; background: #007bff; color: white; border: none; cursor: pointer; }
+button:hover { background: #0056b3; }
+.error { color: red; }
+.success { color: green; }
+.hidden { display: none; }
+table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+.progress-bar { background: #eee; height: 10px; width: 100%; }
+.progress-fill { background: green; height: 100%; }

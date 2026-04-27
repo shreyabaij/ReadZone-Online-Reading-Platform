@@ -1,0 +1,4 @@
+This ZIP contains the ReadZone project source code only.
+Included: PHP source files, HTML/CSS/JS frontend files, configuration files, vendor runtime files, cover images, and the manual search/sort implementation.
+Excluded: report files and sample book PDFs.
+Manual algorithm file: utils/search_sort.php

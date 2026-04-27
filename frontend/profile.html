@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+    <title>ReadZone - Profile</title>
+    <link rel="stylesheet" href="assets/css/main.css?v=1.1">
+    <link rel="stylesheet" href="assets/css/components.css?v=1.1">
+    <style>
+        .profile-hero {
+            background: var(--grad-primary);
+            padding: 6rem 0;
+            color: white;
+            text-align: center;
+            margin-bottom: 3rem;
+            border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Hero Animations */
+        .hero-blob {
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            background: rgba(255, 255, 255, 0.1);
+            filter: blur(80px);
+            border-radius: 50%;
+            z-index: 1;
+            animation: float 20s infinite alternate ease-in-out;
+            pointer-events: none;
+        }
+
+        .blob-1 {
+            top: -150px;
+            left: -100px;
+            animation-delay: 0s;
+        }
+
+        .blob-2 {
+            bottom: -150px;
+            right: -100px;
+            animation-delay: -5s;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            100% {
+                transform: translate(50px, 30px) scale(1.1);
+            }
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 2rem;
+            margin: -6rem auto 3rem;
+            max-width: 800px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .stat-card {
+            background: var(--bg-surface);
+            padding: 2rem;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+            text-align: center;
+            box-shadow: var(--shadow-md);
+            transition: transform var(--trans-fast);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .stat-value {
+            font-size: 3rem;
+            font-weight: 800;
+            color: var(--primary);
+            /* Fallback */
+            background: var(--grad-primary);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 1rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 0.5rem;
+        }
+
+        .settings-container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        /* Security Grid for Equal Height Boxes */
+        .security-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 2rem;
+            align-items: stretch;
+        }
+
+        .security-card {
+            background: var(--bg-surface);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-sm);
+            padding: 2.5rem;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .security-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .section-header {
+            margin-bottom: 2.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .method-select {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            background: var(--bg-app);
+            padding: 0.4rem;
+            border-radius: var(--radius-md);
+        }
+
+        .method-opt {
+            flex: 1;
+            padding: 0.75rem;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            text-align: center;
+            transition: all var(--trans-fast);
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+
+        .method-opt.selected {
+            background: white;
+            color: var(--primary);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .input-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .input-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--text-main);
+            font-size: 0.95rem;
+        }
+
+        input[type="text"],
+        input[type="password"],
+        select {
+            border-color: #cbd5e1 !important;
+        }
+
+        input:focus {
+            border-color: var(--primary) !important;
+        }
+    </style>
+</head>
+
+<body>
+    <header class="navbar">
+        <div class="container nav-inner">
+            <a href="reader_dashboard.html" class="nav-brand">ReadZone</a>
+            <div style="flex: 1;"></div>
+            <nav class="nav-links text-sm">
+                <a href="reader_dashboard.html">Browse</a>
+                <a href="my_books.html">My Library</a>
+                <a href="my_lists.html">My Lists</a>
+                <div class="nav-divider"></div>
+                <a href="admin_dashboard.html" id="admin-link" class="hidden"
+                    style="color: var(--primary); font-weight: 600;">⚙️ Admin</a>
+                <a href="profile.html" id="nav-username" class="font-bold"></a>
+                <a href="#" onclick="logout()" class="text-xs text-muted">Logout</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="profile-hero">
+        <div class="hero-blob blob-1"></div>
+        <div class="hero-blob blob-2"></div>
+        <div class="container hero-content">
+            <h1 class="text-3xl font-serif" id="p-username" style="margin-bottom: 0.5rem;">Username</h1>
+            <p style="opacity: 0.8; font-size: 1.1rem; font-weight: 500;" id="p-email">user@example.com</p>
+        </div>
+    </div>
+
+    <main class="container">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="stat-owned">0</div>
+                <div class="stat-label">Books in Library</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-read">0</div>
+                <div class="stat-label">Books Finished</div>
+            </div>
+        </div>
+
+        <div class="settings-container">
+            <div class="section-header">
+                <h2 class="text-2xl font-serif">Account Security</h2>
+            </div>
+
+            <div id="tab-security" class="security-grid">
+                <!-- Password Update -->
+                <div class="security-card">
+                    <h3 class="text-xl" style="margin-bottom: 1.5rem;">Change Password</h3>
+                    <div class="security-content">
+                        <label class="input-label">Verification Method</label>
+                        <div class="method-select">
+                            <div class="method-opt selected" onclick="selectMethod('pwd', 'otp')">OTP</div>
+                            <div class="method-opt" onclick="selectMethod('pwd', 'security')">Security Question</div>
+                        </div>
+
+                        <!-- OTP Flow -->
+                        <div id="pwd-otp-flow">
+                            <button class="btn btn-outline" style="width:100%; margin-bottom: 1rem;"
+                                onclick="sendOTP('pwd')">Send OTP to Email</button>
+                            <div id="pwd-otp-input" class="hidden input-group">
+                                <label class="input-label">Enter OTP</label>
+                                <input type="text" id="pwd_otp_code">
+                            </div>
+                        </div>
+
+                        <!-- Sec Question Flow -->
+                        <div id="pwd-sec-flow" class="hidden input-group">
+                            <label class="input-label">Answer Security Question</label>
+                            <input type="text" id="pwd_sec_ans" placeholder="Your Answer">
+                        </div>
+
+                        <div class="input-group">
+                            <label class="input-label">New Password</label>
+                            <input type="password" id="new_pwd">
+                        </div>
+
+                        <button class="btn btn-primary" style="width:100%" onclick="updatePassword()">Update
+                            Password</button>
+                    </div>
+                </div>
+
+                <!-- Security Question Update -->
+                <div class="security-card">
+                    <h3 class="text-xl" style="margin-bottom: 1.5rem;">Change Security Question</h3>
+                    <div class="security-content">
+                        <label class="input-label">Verification Method</label>
+                        <div class="method-select">
+                            <div class="method-opt selected" onclick="selectMethod('sq', 'password')">Password</div>
+                            <div class="method-opt" onclick="selectMethod('sq', 'otp')">OTP</div>
+                        </div>
+
+                        <!-- Pwd Flow -->
+                        <div id="sq-pwd-flow" class="input-group">
+                            <label class="input-label">Current Password</label>
+                            <input type="password" id="sq_ver_pwd">
+                        </div>
+
+                        <!-- OTP Flow -->
+                        <div id="sq-otp-flow" class="hidden">
+                            <button class="btn btn-outline" style="width:100%; margin-bottom: 1rem;"
+                                onclick="sendOTP('sq')">Send OTP</button>
+                            <div id="sq-otp-input" class="hidden input-group">
+                                <label class="input-label">Enter OTP</label>
+                                <input type="text" id="sq_otp_code">
+                            </div>
+                        </div>
+
+                        <div class="input-group">
+                            <label class="input-label">New Question</label>
+                            <select id="new_sq_q">
+                                <option>What was your first pet's name?</option>
+                                <option>What is your mother's maiden name?</option>
+                                <option>What was the name of your elementary school?</option>
+                                <option>What is your favorite book?</option>
+                                <option>What city were you born in?</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label class="input-label">New Answer</label>
+                            <input type="text" id="new_sq_a">
+                        </div>
+
+                        <button class="btn btn-primary" style="width:100%" onclick="updateSecurity()">Update Security
+                            Settings</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    </main>
+
+    <script src="assets/js/api.js?v=1.1"></script>
+    <script>
+        checkAuth('reader');
+        initNavbar();
+
+        let pwdMethod = 'otp';
+        let sqMethod = 'password';
+
+        async function loadProfile() {
+            try {
+                const data = await apiCall('/reader/profile.php');
+                // initNavbar removed from here as it's now global
+                document.getElementById('p-username').textContent = data.user.username;
+                document.getElementById('p-email').textContent = data.user.email;
+
+                document.getElementById('stat-owned').textContent = data.stats.owned;
+                document.getElementById('stat-read').textContent = data.stats.read;
+
+                if (data.user.role === 'admin') {
+                    document.querySelector('.settings-container').style.display = 'none';
+                }
+            } catch (e) { }
+        }
+
+        function selectMethod(type, method) {
+            if (type === 'pwd') {
+                pwdMethod = method;
+                document.querySelectorAll('#pwd-otp-flow, #pwd-sec-flow').forEach(el => el.classList.add('hidden'));
+                // Visual toggle
+                const opts = document.querySelectorAll('.method-opt'); // Hacky selection, should scope
+                // ... Simplification: just logic
+                if (method === 'otp') document.getElementById('pwd-otp-flow').classList.remove('hidden');
+                else document.getElementById('pwd-sec-flow').classList.remove('hidden');
+
+                // Update styling
+                const cards = document.querySelectorAll('.security-card');
+                const container = cards[0].querySelector('.method-select');
+                container.children[0].className = method === 'otp' ? 'method-opt selected' : 'method-opt';
+                container.children[1].className = method === 'security' ? 'method-opt selected' : 'method-opt';
+            }
+            if (type === 'sq') {
+                sqMethod = method;
+                document.getElementById('sq-pwd-flow').classList.add('hidden');
+                document.getElementById('sq-otp-flow').classList.add('hidden');
+
+                if (method === 'password') document.getElementById('sq-pwd-flow').classList.remove('hidden');
+                else document.getElementById('sq-otp-flow').classList.remove('hidden');
+
+                // Update styling
+                const cards = document.querySelectorAll('.security-card');
+                const container = cards[1].querySelector('.method-select');
+                container.children[0].className = method === 'password' ? 'method-opt selected' : 'method-opt';
+                container.children[1].className = method === 'otp' ? 'method-opt selected' : 'method-opt';
+            }
+        }
+
+        // Logic
+        async function sendOTP(type) {
+            const btn = event.target; // Store reference before await if needed, though event might be lost? Safe to store.
+            showGlobalLoading("Sending OTP...");
+            try {
+                const res = await apiCall('/reader/profile.php?action=send_otp', 'POST', {});
+                showToast('OTP Sent', 'success');
+                if (type === 'pwd') {
+                    document.getElementById('pwd-otp-input').classList.remove('hidden');
+                } else {
+                    document.getElementById('sq-otp-input').classList.remove('hidden');
+                }
+
+                // Start cooldown
+                startCooldown(btn, 60);
+
+            } catch (e) {
+                // Error handled by apiCall toast usually
+            } finally {
+                hideGlobalLoading();
+            }
+        }
+
+        async function updatePassword() {
+            const newPwd = document.getElementById('new_pwd').value;
+            if (!newPwd) return showToast('Enter new password', 'error');
+
+            let proof = '';
+            // Determine proof
+            if (pwdMethod === 'otp') proof = document.getElementById('pwd_otp_code').value;
+            else proof = document.getElementById('pwd_sec_ans').value;
+
+            if (!proof) return showToast('Verification required', 'error');
+
+            try {
+                await apiCall('/reader/profile.php?action=update_password', 'POST', {
+                    new_password: newPwd,
+                    method: pwdMethod === 'otp' ? 'otp' : 'security_question',
+                    proof: proof
+                });
+                showToast('Password Updated. Please login again.', 'success');
+                setTimeout(logout, 2000);
+            } catch (e) { }
+        }
+
+        async function updateSecurity() {
+            const q = document.getElementById('new_sq_q').value;
+            const a = document.getElementById('new_sq_a').value;
+            if (!q || !a) return showToast('Fill all fields', 'error');
+
+            let proof = '';
+            if (sqMethod === 'password') proof = document.getElementById('sq_ver_pwd').value;
+            else proof = document.getElementById('sq_otp_code').value;
+
+            if (!proof) return showToast('Verification required', 'error');
+
+            try {
+                await apiCall('/reader/profile.php?action=update_security', 'POST', {
+                    question: q,
+                    answer: a,
+                    method: sqMethod === 'password' ? 'password' : 'otp',
+                    proof: proof
+                });
+                showToast('Security Settings Updated', 'success');
+            } catch (e) { }
+        }
+
+        loadProfile();
+    </script>
+</body>
+
+</html>

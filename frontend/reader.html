@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>ReadZone - Reader v2.0</title>
+    <link rel="stylesheet" href="assets/css/main.css?v=1.1">
+    <link rel="stylesheet" href="assets/css/components.css?v=1.1">
+    <!-- PDF.js from CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';</script>
+
+    <style>
+        body {
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-app);
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Top Bar (Title & Meta) */
+        .reader-topbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2rem;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            z-index: 50;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s;
+        }
+
+        /* Bottom Bar (Controls) */
+        .reader-controls {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 50px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+            z-index: 50;
+            transition: opacity 0.3s, transform 0.3s;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .divider {
+            width: 1px;
+            height: 24px;
+            background: #e2e8f0;
+        }
+
+        .icon-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-muted);
+            font-size: 1.2rem;
+            padding: 8px;
+            border-radius: 50%;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+        }
+
+        .icon-btn:hover {
+            background: var(--primary-light);
+            color: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        #pdf-container {
+            flex: 1;
+            overflow: auto;
+            position: relative;
+            display: block;
+            /* Changed from flex to block to fix overflow scrolling */
+            text-align: center;
+            padding: 80px 20px 100px;
+            /* Space for bars */
+            scroll-behavior: smooth;
+        }
+
+        canvas {
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            border-radius: 4px;
+            transition: transform 0.3s ease, filter 0.3s ease;
+            max-width: none !important;
+            /* Force no limit */
+            width: auto !important;
+            /* Let canvas size define width */
+            display: inline-block;
+        }
+
+        /* Reading Progress Bar */
+        .progress-container {
+            position: fixed;
+            top: 60px;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: rgba(0, 0, 0, 0.05);
+            z-index: 49;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--grad-primary);
+            width: 0%;
+            transition: width 0.3s;
+            border-radius: 0 2px 2px 0;
+        }
+
+        /* Themes - Enhanced Styling */
+        /* Body transition for smooth theme switching */
+        body {
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* Dark Theme */
+        [data-theme="dark"] body {
+            background: #111827;
+            /* Darker, cleaner gray */
+            color: #e5e5e5;
+        }
+
+        [data-theme="dark"] .reader-topbar {
+            background: rgba(17, 24, 39, 0.95);
+            border-bottom-color: #374151;
+            color: #d1d5db;
+        }
+
+        [data-theme="dark"] .reader-controls {
+            background: #1f2937;
+            border-color: #374151;
+            color: #d1d5db;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        [data-theme="dark"] .divider {
+            background: #374151;
+        }
+
+        [data-theme="dark"] .icon-btn {
+            color: #9ca3af;
+        }
+
+        [data-theme="dark"] .icon-btn:hover {
+            background: #374151;
+            color: #fff;
+        }
+
+        [data-theme="dark"] canvas {
+            filter: invert(0.9) hue-rotate(180deg) contrast(0.9);
+            /* Softer dark mode for PDF */
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Sepia Theme */
+        [data-theme="sepia"] body {
+            background: #fdf6e3;
+            /* Solarized lightish/cream */
+            color: #5c4b37;
+        }
+
+        [data-theme="sepia"] .reader-topbar {
+            background: rgba(253, 246, 227, 0.95);
+            border-bottom-color: #d3c4a9;
+            color: #5c4b37;
+        }
+
+        [data-theme="sepia"] .reader-controls {
+            background: #fcf4dc;
+            border-color: #d3c4a9;
+            color: #5c4b37;
+            box-shadow: 0 10px 40px rgba(92, 75, 55, 0.15);
+        }
+
+        [data-theme="sepia"] .divider {
+            background: #d3c4a9;
+        }
+
+        [data-theme="sepia"] .icon-btn {
+            color: #8a7356;
+        }
+
+        [data-theme="sepia"] .icon-btn:hover {
+            background: #ebe1c6;
+            color: #433422;
+        }
+
+        [data-theme="sepia"] canvas {
+            filter: sepia(0.2) contrast(0.95) brightness(0.98);
+            /* Warmer, easier on eyes */
+            box-shadow: 0 20px 40px rgba(92, 75, 55, 0.1);
+        }
+
+        [data-theme="sepia"] .progress-bar {
+            background: #d35400;
+        }
+
+        /* Burnt orange for sepia */
+    </style>
+</head>
+
+<body>
+    <!-- Reading Progress -->
+    <div class="progress-container">
+        <div class="progress-bar" id="reading-progress"></div>
+    </div>
+
+    <!-- Top Navigation -->
+    <header class="reader-topbar">
+        <a href="my_books.html" class="flex items-center gap-2 text-muted hover:text-primary transition-colors">
+            <span>←</span> <span class="font-bold">Library</span>
+        </a>
+        <h1 id="book-title" class="font-serif text-lg font-bold truncate max-w-md">Loading...</h1>
+        <div class="flex gap-2">
+            <button class="icon-btn" onclick="toggleBookmarks()" title="Bookmarks">🔖</button>
+            <button class="icon-btn" onclick="addBookmark()" title="Add Bookmark">+</button>
+        </div>
+    </header>
+
+    <!-- Bookmarks Panel -->
+    <div id="bookmarks-panel"
+        style="position:fixed; right:0; top:60px; bottom:0; width:300px; background:rgba(255,255,255,0.95); backdrop-filter:blur(10px); border-left:1px solid rgba(0,0,0,0.1); transform:translateX(100%); transition:transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index:48; padding:2rem; overflow-y:auto; box-shadow: -10px 0 30px rgba(0,0,0,0.05);">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-xl font-serif font-bold">Bookmarks</h3>
+            <button class="icon-btn" onclick="toggleBookmarks()">×</button>
+        </div>
+        <div id="bookmarks-list" style="display:flex; flex-direction:column; gap:0.75rem;"></div>
+    </div>
+
+    <!-- Canvas Area -->
+    <div id="pdf-container">
+        <canvas id="the-canvas"></canvas>
+    </div>
+
+    <!-- Floating Controls -->
+    <!-- ... (controls already there, skipping to scripts) ... -->
+    <div class="reader-controls">
+        <!-- Navigation -->
+        <div class="control-group">
+            <button class="icon-btn" onclick="prevPage()">‹</button>
+            <span class="font-mono text-sm mx-2"><span id="page-num">0</span> / <span id="page-count">0</span></span>
+            <button class="icon-btn" onclick="nextPage()">›</button>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Zoom (Clarified as Zoom, not Font Size) -->
+        <div class="control-group">
+            <button class="icon-btn" onclick="changeZoom(-0.25)" title="Zoom Out">🔍−</button>
+            <span id="zoom-level" class="text-xs font-bold w-12 text-center">150%</span>
+            <button class="icon-btn" onclick="changeZoom(0.25)" title="Zoom In">🔍+</button>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Themes -->
+        <div class="control-group">
+            <button class="icon-btn" onclick="changeTheme('light')" title="Light Mode">☀</button>
+            <button class="icon-btn" onclick="changeTheme('sepia')" title="Sepia Mode"
+                style="color: #b45309;">●</button>
+            <button class="icon-btn" onclick="changeTheme('dark')" title="Dark Mode">☾</button>
+        </div>
+    </div>
+
+    <script src="assets/js/api.js?v=1.1"></script>
+    <script>
+        checkAuth('reader');
+        const urlParams = new URLSearchParams(window.location.search);
+        const bookId = urlParams.get('id') || urlParams.get('book_id'); // Accept both 'id' and 'book_id'
+        const title = urlParams.get('title');
+
+        if (title) document.getElementById('book-title').innerText = title;
+
+        // PDF State
+        let pdfDoc = null;
+        let pageNum = 1;
+        let pageRendering = false;
+        let pageNumPending = null;
+        let scale = 1.5;
+        const canvas = document.getElementById('the-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Theme Logic
+        function changeTheme(theme) {
+            document.body.setAttribute('data-theme', theme);
+
+            // Optional: Persist theme preference
+            localStorage.setItem('reader_theme', theme);
+
+            // Re-render to apply canvas filters cleanly
+            if (pdfDoc) renderPage(pageNum);
+        }
+
+        // Init Theme
+        const savedTheme = localStorage.getItem('reader_theme') || 'light';
+        changeTheme(savedTheme);
+
+        /**
+         * Render Page
+         */
+        // Zoom Logic
+        function changeZoom(delta) {
+            scale += delta;
+            if (scale < 1.0) scale = 1.0; // Min 100%
+            if (scale > 2.5) scale = 2.5; // Max 250%
+            document.getElementById('zoom-level').textContent = Math.round(scale * 100) + '%';
+
+            // Re-render current page
+            if (pdfDoc) renderPage(pageNum);
+        }
+
+        // Bookmarks Logic
+        function toggleBookmarks() {
+            const panel = document.getElementById('bookmarks-panel');
+            if (panel.style.transform === 'translateX(0%)') {
+                panel.style.transform = 'translateX(100%)';
+            } else {
+                panel.style.transform = 'translateX(0%)';
+                loadBookmarks();
+            }
+        }
+
+        async function loadBookmarks() {
+            try {
+                const data = await apiCall(`/reader/bookmarks.php?book_id=${bookId}`);
+                const list = document.getElementById('bookmarks-list');
+
+                if (!data || data.length === 0) {
+                    list.innerHTML = '<div class="text-sm text-muted">No bookmarks yet.</div>';
+                    return;
+                }
+
+                list.innerHTML = data.map(b => `
+                    <div style="padding: 10px; background: var(--bg-app); border-radius: 6px; border: 1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+                        <div style="cursor: pointer; flex:1;" onclick="jumpToPage(${b.page_number})">
+                            <div class="font-bold text-sm">${b.title}</div>
+                            <div class="text-xs text-muted">Page ${b.page_number}</div>
+                        </div>
+                        <button class="icon-btn" style="color:var(--danger); font-size:1rem;" onclick="deleteBookmark(${b.id})">×</button>
+                    </div>
+                `).join('');
+            } catch (e) { console.error('Error loading bookmarks', e); }
+        }
+
+        async function deleteBookmark(id) {
+            if (!confirm('Delete this bookmark?')) return;
+            try {
+                await apiCall('/reader/bookmarks.php', 'DELETE', { id: id });
+                showToast('Bookmark removed', 'success');
+                loadBookmarks();
+            } catch (e) { }
+        }
+
+        function jumpToPage(num) {
+            pageNum = parseInt(num);
+            renderPage(pageNum);
+            // On mobile might want to close panel
+            if (window.innerWidth < 768) toggleBookmarks();
+        }
+
+        async function addBookmark() {
+            const note = prompt("Bookmark Name (Optional):");
+            if (note === null) return;
+            try {
+                await apiCall('/reader/bookmarks.php', 'POST', {
+                    book_id: bookId,
+                    page_number: pageNum,
+                    title: note || `Page ${pageNum}`
+                });
+                showToast('Bookmark added', 'success');
+                // Refresh list if open
+                if (document.getElementById('bookmarks-panel').style.transform === 'translateX(0%)') {
+                    loadBookmarks();
+                }
+            } catch (e) { }
+        }
+
+        /**
+         * Render Page
+         */
+        function renderPage(num) {
+            pageRendering = true;
+            pdfDoc.getPage(num).then(function (page) {
+                const viewport = page.getViewport({ scale: scale });
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+
+                const renderContext = {
+                    canvasContext: ctx,
+                    viewport: viewport
+                };
+                const renderTask = page.render(renderContext);
+
+                renderTask.promise.then(function () {
+                    pageRendering = false;
+                    if (pageNumPending !== null) {
+                        renderPage(pageNumPending);
+                        pageNumPending = null;
+                    }
+                });
+            });
+
+            document.getElementById('page-num').textContent = num;
+
+            // Update Progress Bar
+            const percent = pdfDoc.numPages > 1 ? Math.floor(((num - 1) / (pdfDoc.numPages - 1)) * 100) : 100;
+            const progressBar = document.getElementById('reading-progress');
+            if (progressBar) progressBar.style.width = percent + '%';
+
+            saveProgress(num);
+        }
+
+        function queueRenderPage(num) {
+            if (pageRendering) pageNumPending = num;
+            else renderPage(num);
+        }
+
+        function prevPage() {
+            if (pageNum <= 1) return;
+            pageNum--;
+            queueRenderPage(pageNum);
+        }
+
+        function nextPage() {
+            if (pageNum >= pdfDoc.numPages) return;
+            pageNum++;
+            queueRenderPage(pageNum);
+        }
+
+        async function saveProgress(p) {
+            if (!pdfDoc) return;
+            const percent = Math.floor((p / pdfDoc.numPages) * 100);
+            try {
+                // Debounce simple implementation: only log success on console to avoid spamming toasts
+                await apiCall('/reader/progress.php', 'POST', {
+                    book_id: bookId,
+                    last_page: p,
+                    progress_percentage: percent
+                });
+            } catch (e) { }
+        }
+
+        // Display Fatal Error
+        function showError(msg) {
+            const container = document.getElementById('pdf-container');
+            container.innerHTML = `
+                <div style="text-align:center; padding: 2rem; color: var(--danger);">
+                    <h2 class="text-xl mb-2">Error Loading Book</h2>
+                    <p class="text-muted">${msg}</p>
+                    <button onclick="location.reload()" class="mt-4 px-4 py-2 bg-primary text-white rounded-lg">Retry</button>
+                    <a href="my_books.html" class="block mt-4 text-sm underline">Back to Library</a>
+                </div>
+            `;
+        }
+
+        // Init
+        async function initReader() {
+            try {
+                if (!bookId) {
+                    showError('No book specified.');
+                    return;
+                }
+
+                // Show loading toast
+                showToast('Loading book...', 'info');
+
+                // 1. Fetch Book Details for File Path
+                const bookRes = await apiCall(`/reader/books.php?id=${bookId}`);
+                if (!bookRes.books || bookRes.books.length === 0) {
+                    showError('Book not found in database.');
+                    return;
+                }
+                const bookDetails = bookRes.books[0];
+                const bookPath = bookDetails.book_path;
+
+                // Update title if available
+                if (bookDetails.title) document.getElementById('book-title').innerText = bookDetails.title;
+
+                // 2. Fetch Saved Status for Progress
+                let savedEntry = null;
+                try {
+                    const savedRes = await apiCall('/reader/saved_books.php');
+                    // Check if savedRes is an array before finding
+                    if (Array.isArray(savedRes)) {
+                        savedEntry = savedRes.find(b => b.book_id == bookId);
+                    }
+                } catch (err) {
+                    console.warn("Could not fetch saved progress", err);
+                }
+
+                // 3. Auto-Save Logic
+                if (!savedEntry) {
+                    console.log('Book not in library, auto-saving...');
+                    try {
+                        await apiCall('/reader/saved_books.php', 'POST', { book_id: bookId, action: 'add' });
+                        showToast('Book added to library', 'success');
+                        savedEntry = { last_page: 1 };
+                    } catch (e) {
+                        console.error('Auto-save failed', e);
+                        savedEntry = { last_page: 1 };
+                    }
+                }
+
+                if (!bookPath) {
+                    showError('Book file path is missing.');
+                    return;
+                }
+
+                // 4. Load PDF
+                // Handle potential path variations
+                let cleanPath = bookPath.startsWith('/') ? bookPath.substring(1) : bookPath;
+
+                // Robust path fix: ensure we don't double up or miss standard folders
+                // If it doesn't start with uploads/ or readzone/, and doesn't look like a full URL
+                if (!cleanPath.startsWith('http') && !cleanPath.startsWith('uploads/') && !cleanPath.includes('/')) {
+                    cleanPath = 'uploads/books/' + cleanPath;
+                }
+
+                // Construct URL - handle local vs production paths if needed
+                // If the path already includes 'readzone/', don't prepend it if we are already in root context,
+                // but simpler to just ensure relative path is correct.
+                // Best bet: relative to current page location if it's served from same root.
+                // If app is at /readzone/, and we want /readzone/uploads/..., 
+
+                // My fix: Use a cleaner relative path resolution
+                let url;
+                if (cleanPath.startsWith('http')) {
+                    url = cleanPath;
+                } else if (cleanPath.startsWith('readzone/')) {
+                    // If path is like readzone/uploads/..., it implies root-relative
+                    url = '/' + cleanPath;
+                } else {
+                    // Assume it's relative to project root, so prepend /readzone/
+                    url = '/readzone/' + cleanPath;
+                }
+
+                console.log('Loading PDF from:', url);
+
+                try {
+                    const loadingTask = pdfjsLib.getDocument(url);
+                    pdfDoc = await loadingTask.promise;
+
+                    document.getElementById('page-count').textContent = pdfDoc.numPages;
+
+                    // Restore progress
+                    pageNum = (savedEntry && savedEntry.last_page) ? parseInt(savedEntry.last_page) : 1;
+                    if (isNaN(pageNum) || pageNum < 1) pageNum = 1;
+
+                    renderPage(pageNum);
+                } catch (err) {
+                    console.error('PDF Load Error:', err);
+                    showError('Failed to load PDF file. ' + (err.message || ''));
+                }
+
+            } catch (e) {
+                console.error(e);
+                showError('Unexpected error: ' + e.message);
+            }
+        }
+
+        initReader();
+    </script>
+</body>
+
+</html>

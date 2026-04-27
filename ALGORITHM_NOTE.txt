@@ -1,0 +1,26 @@
+ReadZone manual algorithm update
+================================
+
+This version includes explicit manual searching and sorting algorithms.
+
+Implemented algorithms:
+1. Linear Search
+   - Used for text-based matching in books, users, and category filters.
+   - Case-insensitive substring matching.
+   - Best fit because the project needs flexible partial-text search rather than exact-only matching.
+
+2. Merge Sort
+   - Used for ordering books, reviews, logs, saved books, and custom lists.
+   - Stable O(n log n) sorting for associative record arrays.
+
+Main helper file:
+- utils/search_sort.php
+
+Updated modules:
+- reader/books.php
+- admin/users.php
+- admin/logs.php
+- admin/reviews.php
+- reader/saved_books.php
+- reader/reviews.php
+- reader/lists.php

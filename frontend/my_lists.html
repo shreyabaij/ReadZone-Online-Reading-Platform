@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>ReadZone - My Lists</title>
+    <link rel="stylesheet" href="assets/css/main.css?v=1.1">
+    <link rel="stylesheet" href="assets/css/components.css?v=1.1">
+    <style>
+        .lists-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 2rem;
+            align-items: stretch;
+        }
+
+        .list-card {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 2rem;
+            position: relative;
+            box-shadow: var(--shadow-sm);
+            transition: all var(--trans-fast);
+        }
+
+        .list-card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-4px);
+        }
+
+        .list-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .list-count {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .list-thumbs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 1rem;
+            height: 60px;
+            overflow: hidden;
+        }
+
+        .list-thumbs img {
+            width: 40px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+
+        .delete-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: var(--danger);
+            cursor: pointer;
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+        }
+
+        /* Modal for new list */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        .modal.hidden {
+            display: none;
+        }
+
+        .modal-content {
+            background: var(--bg-surface);
+            padding: 2rem;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 400px;
+        }
+    </style>
+</head>
+
+<body>
+    <header class="navbar">
+        <div class="container nav-inner">
+            <a href="reader_dashboard.html" class="nav-brand">ReadZone</a>
+            <div style="flex: 1;"></div>
+            <nav class="nav-links text-sm">
+                <a href="reader_dashboard.html">Browse</a>
+                <a href="my_books.html">My Library</a>
+                <a href="my_lists.html">My Lists</a>
+                <div class="nav-divider"></div>
+                <a href="admin_dashboard.html" id="admin-link" class="hidden"
+                    style="color: var(--primary); font-weight: 600;">⚙️ Admin</a>
+                <a href="profile.html" id="nav-username" class="font-bold"></a>
+                <a href="#" onclick="logout()" class="text-xs text-muted">Logout</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container" style="padding: 2rem 20px;">
+        <div class="flex justify-between items-center" style="margin-bottom: 2rem;">
+            <h1 class="font-serif text-2xl">My Lists</h1>
+            <button class="btn btn-primary" onclick="toggleModal()">+ New List</button>
+        </div>
+
+        <div id="lists-container" class="lists-grid">
+            <!-- Content -->
+        </div>
+
+        <div id="details-view" class="hidden" style="margin-top: 2rem;">
+            <button class="btn btn-outline" style="margin-bottom: 1rem;" onclick="closeDetails()">← Back to
+                Lists</button>
+            <h2 id="detail-title" class="text-xl font-bold mb-4"></h2>
+            <div id="detail-books" class="lists-grid"></div>
+        </div>
+    </main>
+
+    <!-- Create List Modal -->
+    <div id="create-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3 class="text-xl mb-4">Create New List</h3>
+            <input type="text" id="new-list-name" placeholder="List Name (e.g. Summer Reads)" class="w-full mb-4"
+                style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px;">
+            <div class="flex justify-end gap-2">
+                <button class="btn btn-outline" onclick="toggleModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="createList()">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="assets/js/api.js?v=1.1"></script>
+    <script>
+        checkAuth('reader');
+        initNavbar();
+
+        let allLists = [];
+
+        async function loadLists() {
+            try {
+                const data = await apiCall('/reader/lists.php?action=get_lists');
+                allLists = data;
+                renderLists();
+            } catch (e) {
+                document.getElementById('lists-container').innerHTML = '<div class="text-muted">Failed to load lists.</div>';
+            }
+        }
+
+        function renderLists() {
+            const container = document.getElementById('lists-container');
+            if (allLists.length === 0) {
+                container.innerHTML = '<div class="text-muted">No custom lists yet. Create one!</div>';
+                return;
+            }
+
+            container.innerHTML = allLists.map(list => {
+                const thumbs = list.books && list.books.length > 0
+                    ? list.books.slice(0, 3).map(b => `<img src="/readzone/${b.cover_path}" onerror="this.src='https://placehold.co/40x60'">`).join('')
+                    : '<div style="width: 100%; height: 60px; background: #eee; border-radius: 4px; display:flex; align-items:center; justify-content:center; color:#999; font-size:0.8rem;">Empty</div>';
+
+                return `
+                    <div class="list-card">
+                        <button class="delete-btn" onclick="deleteList(event, ${list.id})">×</button>
+                        <div style="cursor: pointer; display: flex; flex-direction: column; height: 100%; flex: 1;" onclick="viewList(${list.id})">
+                            <div class="list-title">${list.title}</div>
+                            <div style="flex: 1;"></div>
+                            <div class="list-thumbs">${thumbs}</div>
+                            <div class="list-count">${list.books ? list.books.length : 0} books</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function toggleModal() {
+            document.getElementById('create-modal').classList.toggle('hidden');
+            document.getElementById('new-list-name').value = '';
+        }
+
+        async function createList() {
+            const name = document.getElementById('new-list-name').value;
+            if (!name) return;
+            try {
+                await apiCall('/reader/lists.php', 'POST', { action: 'create_list', title: name });
+                showToast('List created', 'success');
+                toggleModal();
+                loadLists();
+            } catch (e) { }
+        }
+
+        async function deleteList(e, id) {
+            e.stopPropagation();
+            if (!confirm('Delete this list?')) return;
+            try {
+                await apiCall('/reader/lists.php', 'POST', { action: 'delete_list', list_id: id });
+                loadLists();
+            } catch (e) { }
+        }
+
+        function viewList(id) {
+            const list = allLists.find(l => l.id == id);
+            if (!list) return;
+
+            document.getElementById('lists-container').classList.add('hidden');
+            document.getElementById('details-view').classList.remove('hidden');
+            document.getElementById('detail-title').textContent = list.title;
+
+            const container = document.getElementById('detail-books');
+            if (!list.books || list.books.length === 0) {
+                container.innerHTML = '<div class="text-muted">No books in this list.</div>';
+                return;
+            }
+
+            container.innerHTML = list.books.map(b => `
+                <div class="list-card">
+                    <button class="delete-btn" onclick="removeBook(${list.id}, ${b.id})">−</button>
+                    <div style="cursor:pointer;" onclick="window.location.href='book_details.html?id=${b.id}'">
+                        <img src="/readzone/${b.cover_path}" style="width:100%; height:200px; object-fit:cover; border-radius:4px; margin-bottom:0.5rem;" onerror="this.src='https://placehold.co/200x300'">
+                        <div class="font-bold text-sm mb-1">${b.title}</div>
+                        <div class="text-xs text-muted">by ${b.author}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function closeDetails() {
+            document.getElementById('details-view').classList.add('hidden');
+            document.getElementById('lists-container').classList.remove('hidden');
+        }
+
+        async function removeBook(listId, bookId) {
+            if (!confirm('Remove book from list?')) return;
+            try {
+                await apiCall('/reader/lists.php', 'POST', { action: 'remove_book', list_id: listId, book_id: bookId });
+                showToast('Book removed', 'success');
+                loadLists(); // Reload to update state, simpler than local manipulation
+                setTimeout(() => viewList(listId), 500); // Re-open view logic (hacky but works fast)
+                // Better: reload lists, then find list again
+                const data = await apiCall('/reader/lists.php?action=get_lists');
+                allLists = data;
+                viewList(listId);
+            } catch (e) { }
+        }
+
+        loadLists();
+    </script>
+</body>
+
+</html>

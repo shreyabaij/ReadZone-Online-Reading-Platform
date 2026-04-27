@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ReadZone - Access</title>
+  <link rel="stylesheet" href="assets/css/main.css" />
+  <link rel="stylesheet" href="assets/css/components.css" />
+  <style>
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .auth-container {
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .auth-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="auth-container">
+    <div class="auth-header">
+      <h2 class="font-serif text-2xl">ReadZone</h2>
+      <p class="text-muted">Welcome back</p>
+    </div>
+
+    <!-- Login Form -->
+    <div id="login-view" class="card">
+      <h3 class="input-label" style="font-size: 1.2rem; margin-bottom: 1rem">
+        Sign In
+      </h3>
+      <form id="login-form">
+        <div class="input-group">
+          <label class="input-label">Email or Username</label>
+          <input type="text" id="l_username" required />
+        </div>
+        <div class="input-group">
+          <label class="input-label">Password</label>
+          <input type="password" id="l_password" required />
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%">
+          Log In
+        </button>
+      </form>
+      <div class="mt-4 text-sm text-center">
+        <a href="#" onclick="switchView('register')" style="color: var(--primary)">Create account</a>
+        |
+        <a href="forgot_password.html" class="text-muted">Forgot password?</a>
+      </div>
+    </div>
+
+    <!-- Register Form -->
+    <div id="register-view" class="card hidden">
+      <h3 class="input-label" style="font-size: 1.2rem; margin-bottom: 1rem">
+        Create Account
+      </h3>
+      <form id="register-form">
+        <div class="input-group">
+          <label class="input-label">Username</label>
+          <input type="text" id="r_username" required />
+        </div>
+        <div class="input-group">
+          <label class="input-label">Email</label>
+          <input type="email" id="r_email" required />
+        </div>
+        <div class="input-group">
+          <label class="input-label">Password</label>
+          <input type="password" id="r_password" required />
+        </div>
+        <div class="input-group">
+          <label class="input-label">Security Question</label>
+          <select id="r_question">
+            <option>What was your first pet's name?</option>
+            <option>What is your mother's maiden name?</option>
+            <option>What was the name of your elementary school?</option>
+            <option>What is your favorite book?</option>
+            <option>What city were you born in?</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Security Answer</label>
+          <input type="text" id="r_answer" required />
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%">
+          Sign Up
+        </button>
+      </form>
+      <div class="mt-4 text-sm text-center">
+        Already have an account?
+        <a href="#" onclick="switchView('login')" style="color: var(--primary)">Log in</a>
+      </div>
+    </div>
+
+    <!-- OTP Form -->
+    <div id="otp-view" class="card hidden">
+      <h3 class="input-label">Verify Email</h3>
+      <p class="text-muted text-sm" style="margin-bottom: 1rem">
+        We sent a code to your email.
+      </p>
+      <form id="otp-form">
+        <div class="input-group">
+          <input type="text" id="otp_code" placeholder="123456"
+            style="text-align: center; letter-spacing: 5px; font-size: 1.2rem" />
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%">
+          Verify
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script src="assets/js/api.js"></script>
+  <script>
+    function switchView(view) {
+      document
+        .querySelectorAll(".card")
+        .forEach((el) => el.classList.add("hidden"));
+      document.getElementById(view + "-view").classList.remove("hidden");
+    }
+
+    // Login Logic
+    document
+      .getElementById("login-form")
+      .addEventListener("submit", async (e) => {
+        e.preventDefault();
+        try {
+          const res = await apiCall("/auth/login.php", "POST", {
+            username: document.getElementById("l_username").value,
+            password: document.getElementById("l_password").value,
+          });
+
+          if (res.status === "NOT_VERIFIED") {
+            regEmail = res.email;
+            showToast(res.message, "info");
+            switchView("otp");
+            return;
+          }
+
+          if (res.user.role === "admin") {
+            showToast("Login failed. Please use the Admin Portal.", "error");
+            setTimeout(() => {
+              window.location.href = "admin_login.html";
+            }, 2000);
+            return;
+          }
+
+          localStorage.setItem("user_id", res.user.id);
+          localStorage.setItem("role", res.user.role);
+          localStorage.setItem("username", res.user.username);
+
+          showToast("Welcome back!", "success");
+          setTimeout(() => {
+            window.location.href = "reader_dashboard.html";
+          }, 1000);
+        } catch (e) { }
+      });
+
+    // Register Logic
+    let regEmail = "";
+    document
+      .getElementById("register-form")
+      .addEventListener("submit", async (e) => {
+        e.preventDefault();
+        showGlobalLoading("Creating Account...");
+        regEmail = document.getElementById("r_email").value;
+        try {
+          const res = await apiCall("/auth/register.php", "POST", {
+            username: document.getElementById("r_username").value,
+            email: regEmail,
+            password: document.getElementById("r_password").value,
+            security_question: document.getElementById("r_question").value,
+            security_answer: document.getElementById("r_answer").value,
+          });
+
+          switchView("otp");
+          showToast("Account created. Verify OTP.", "success");
+        } catch (e) { } finally {
+          hideGlobalLoading();
+        }
+      });
+
+    // OTP Logic
+    document
+      .getElementById("otp-form")
+      .addEventListener("submit", async (e) => {
+        e.preventDefault();
+        try {
+          await apiCall("/auth/verify_otp.php", "POST", {
+            email: regEmail,
+            otp: document.getElementById("otp_code").value,
+          });
+          showToast("Verified!", "success");
+          switchView("login");
+        } catch (e) { }
+      });
+
+    // Auto-switch based on URL hash
+    if (window.location.hash === "#register") switchView("register");
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ReadZone - Admin Login</title>
+    <link rel="stylesheet" href="assets/css/main.css">
+    <link rel="stylesheet" href="assets/css/components.css">
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .auth-container {
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .auth-header {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: white;
+        }
+
+        .auth-header h2 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .admin-badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.25rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            color: white;
+            backdrop-filter: blur(10px);
+        }
+
+        .card {
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="auth-container">
+        <div class="auth-header">
+            <h2 class="font-serif">ReadZone.</h2>
+            <span class="admin-badge">🔐 Admin Portal</span>
+        </div>
+
+        <div class="card">
+            <h3 class="input-label" style="font-size: 1.2rem; margin-bottom: 1rem;">Administrator Login</h3>
+            <form id="login-form">
+                <div class="input-group">
+                    <label class="input-label">Username</label>
+                    <input type="text" id="username" required autofocus>
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Password</label>
+                    <input type="password" id="password" required>
+                </div>
+                <button type="submit" class="btn btn-primary"
+                    style="width: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    Login as Admin
+                </button>
+            </form>
+            <div class="mt-4 text-sm text-center">
+                <a href="index.html" class="text-muted">← Back to Site</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="assets/js/api.js"></script>
+    <script>
+        // Check if already logged in as admin
+        if (localStorage.getItem('user_id') && localStorage.getItem('role') === 'admin') {
+            window.location.href = 'admin_dashboard.html';
+        }
+
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const res = await apiCall('/auth/login.php', 'POST', { username, password });
+
+                // Check if user is admin
+                if (res.user.role !== 'admin') {
+                    showToast('Access Denied. Admins only.', 'error');
+                    return;
+                }
+
+                // Store credentials
+                localStorage.setItem('user_id', res.user.id);
+                localStorage.setItem('role', res.user.role);
+                localStorage.setItem('username', res.user.username);
+
+                showToast('Welcome, Admin!', 'success');
+                setTimeout(() => {
+                    window.location.href = 'admin_dashboard.html';
+                }, 1000);
+            } catch (e) {
+                // Error already handled by apiCall
+            }
+        });
+    </script>
+</body>
+
+</html>

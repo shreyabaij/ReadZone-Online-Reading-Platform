@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ReadZone - Rediscover the joy of reading</title>
+    <link rel="stylesheet" href="assets/css/main.css?v=1.1" />
+    <link rel="stylesheet" href="assets/css/components.css?v=1.1" />
+    <style>
+      .hero {
+        text-align: center;
+        padding: 5rem 2rem 3rem 2rem;
+        max-width: 800px;
+        margin: 0 auto;
+      }
+
+      .hero h1 {
+        font-size: 3.5rem;
+        margin-bottom: 1.5rem;
+        color: var(--text-main);
+        line-height: 1.1;
+      }
+
+      .hero p {
+        font-size: 1.25rem;
+        color: var(--text-muted);
+        margin-bottom: 2.5rem;
+      }
+
+      /* Book Grid Styles (Sync'd with Dashboard) */
+      .book-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 3rem;
+        align-items: stretch;
+      }
+
+      .book-card {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        cursor: pointer;
+        transition: all var(--trans-fast);
+        background: var(--bg-surface);
+        border-radius: var(--radius-md);
+      }
+
+      .book-card:hover {
+        transform: translateY(-8px);
+      }
+
+      .book-cover {
+        height: 330px;
+        background: #f1f5f9;
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        position: relative;
+        box-shadow: var(--shadow-md);
+        flex-shrink: 0;
+        margin-bottom: 0;
+      }
+
+      .book-card:hover .book-cover {
+        box-shadow: var(--shadow-lg);
+      }
+
+      .book-cover img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.5s ease;
+      }
+
+      .book-card:hover .book-cover img {
+        transform: scale(1.05);
+      }
+
+      .book-info {
+        flex: 1;
+        padding: 1.5rem 1rem;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .book-title {
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        font-family: "Merriweather", serif;
+        font-size: 1.15rem;
+        color: var(--text-main);
+        line-height: 1.4;
+      }
+
+      .book-author {
+        color: var(--text-muted);
+        font-size: 0.95rem;
+        margin-bottom: 1.5rem;
+        flex-grow: 1;
+      }
+
+      /* Category Styles */
+      .category-section {
+        background: white;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border);
+        overflow: hidden;
+        transition: all var(--trans-fast);
+        box-shadow: var(--shadow-sm);
+        margin-bottom: 2rem;
+      }
+
+      .category-section:hover {
+        border-color: var(--primary);
+        box-shadow: var(--shadow-md);
+      }
+
+      .category-header {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1.75rem 2rem;
+        background: white;
+        border: none;
+        cursor: pointer;
+        text-align: left;
+      }
+
+      .category-arrow {
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--bg-app);
+        border-radius: 50%;
+        color: var(--text-muted);
+        transition: all var(--trans-fast);
+      }
+
+      .category-section:hover .category-arrow {
+        background: var(--primary);
+        color: white;
+        transform: scale(1.1);
+      }
+
+      /* Discovery Header */
+      .discovery-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .discovery-header h2 {
+        font-size: 2rem;
+        font-weight: 800;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <nav class="flex justify-between items-center" style="padding: 1.5rem 0">
+        <div
+          class="font-serif text-2xl"
+          style="font-weight: 900; letter-spacing: -1px"
+        >
+          ReadZone
+        </div>
+        <div class="flex gap-4">
+          <a
+            href="login.html"
+            class="btn btn-outline"
+            style="border-radius: 50px"
+            >Log In</a
+          >
+          <a
+            href="register.html"
+            class="btn btn-primary"
+            style="border-radius: 50px"
+            >Join Now</a
+          >
+        </div>
+      </nav>
+
+      <section class="hero">
+        <h1 class="font-serif">Find your next<br />favorite book.</h1>
+        <p>
+          Explore thousands of digital books in a beautiful, minimal interface
+          designed for readers without any hassle.
+        </p>
+        <div class="flex gap-4" style="justify-content: center">
+          <a
+            href="register.html"
+            class="btn btn-primary"
+            style="padding: 1rem 2.5rem; border-radius: 50px"
+            >Start Reading Free</a
+          >
+        </div>
+      </section>
+
+      <section id="discovery" style="margin-top: 4rem; margin-bottom: 6rem">
+        <h2 class="font-serif" style="font-size: 2.5rem; margin-bottom: 2rem">
+          Explore Categories
+        </h2>
+        <div
+          id="categories-container"
+          style="display: flex; flex-direction: column"
+        >
+          <!-- Categories injected here -->
+          <div
+            style="text-align: center; padding: 4rem; color: var(--text-muted)"
+          >
+            Loading library...
+          </div>
+        </div>
+      </section>
+
+      <footer
+        style="
+          text-align: center;
+          padding: 4rem 0;
+          border-top: 1px solid var(--border);
+        "
+      >
+        <div
+          class="font-serif text-xl"
+          style="font-weight: 900; margin-bottom: 1rem"
+        >
+          ReadZone
+        </div>
+        <p class="text-muted text-sm" style="margin-bottom: 2rem">
+          &copy; 2026 ReadZone. All rights reserved.
+        </p>
+        <p class="text-muted text-sm">
+          <a
+            href="admin_login.html"
+            style="
+              color: var(--text-muted);
+              text-decoration: none;
+              opacity: 0.5;
+              transition: opacity 0.2s;
+            "
+            onmouseover="this.style.opacity = '1'"
+            onmouseout="this.style.opacity = '0.5'"
+            >Admin Portal</a
+          >
+        </p>
+      </footer>
+
+      <script src="assets/js/api.js?v=1.1"></script>
+      <script>
+        // Check if already logged in
+        if (localStorage.getItem("user_id")) {
+          window.location.href = "reader_dashboard.html";
+        }
+
+        const CATEGORIES = [
+          "All",
+          "Fiction",
+          "Non-Fiction",
+          "Science Fiction",
+          "Fantasy",
+          "Mystery",
+          "Thriller",
+          "Romance",
+          "Horror",
+          "Programming",
+          "Biography",
+          "History",
+          "Self-Help",
+          "Philosophy",
+          "Technology",
+          "Education",
+          "Children’s Literature",
+        ];
+
+        window.categoryData = {};
+
+        async function loadLibrary() {
+          try {
+            const response = await fetch("/readzone/reader/books.php");
+            const data = await response.json();
+
+            if (data.books && data.books.length > 0) {
+              renderCategories(data.books);
+            } else {
+              document.getElementById("categories-container").innerHTML =
+                '<div style="text-align: center; color: var(--text-muted); padding: 4rem;">No books available at the moment.</div>';
+            }
+          } catch (error) {
+            console.error("Error loading library:", error);
+            document.getElementById("categories-container").innerHTML =
+              '<div style="text-align: center; color: var(--text-muted); padding: 4rem;">Failed to load library. Please try again later.</div>';
+          }
+        }
+
+        function renderCategories(allBooks) {
+          const container = document.getElementById("categories-container");
+          container.innerHTML = "";
+
+          CATEGORIES.forEach((cat) => {
+            let catBooks = [];
+            if (cat === "All") {
+              catBooks = allBooks;
+            } else {
+              catBooks = allBooks.filter(
+                (b) =>
+                  b.categories &&
+                  b.categories.toLowerCase().includes(cat.toLowerCase()),
+              );
+            }
+
+            if (catBooks.length > 0) {
+              window.categoryData[cat] = catBooks;
+              const initialBooks = catBooks.slice(0, 4); // Show 4 initially for landing page
+              const hasMore = catBooks.length > 4;
+
+              const section = document.createElement("div");
+              section.className = "category-section";
+              section.innerHTML = `
+                    <button class="category-header" onclick="toggleCategory(this)">
+                        <span class="font-serif" style="font-size: 1.5rem; font-weight: 700;">${cat}</span>
+                        <div class="flex items-center gap-4">
+                            <span class="text-muted text-sm">${catBooks.length} books</span>
+                            <div class="category-arrow">▼</div>
+                        </div>
+                    </button>
+                    <div class="category-content hidden" style="padding: 2rem; border-top: 1px solid var(--border); background: #fafafa;">
+                        <div id="grid-${cat.replace(/\s+/g, "-")}" class="book-grid">
+                            ${initialBooks.map((b) => createBookCard(b)).join("")}
+                        </div>
+                        ${
+                          hasMore
+                            ? `
+                            <div class="load-more-container" style="text-align: center; margin-top: 4rem;">
+                                <button class="btn btn-outline" style="min-width: 250px;" 
+                                    onclick="showMoreBooks('${cat}', this)">Load More Books</button>
+                            </div>
+                        `
+                            : ""
+                        }
+                    </div>
+                `;
+              container.appendChild(section);
+            }
+          });
+        }
+
+        function createBookCard(book) {
+          return `
+            <div class="book-card" onclick="window.location.href='login.html'">
+                <div class="book-cover">
+                    <img src="/readzone/${book.cover_path}" alt="${book.title}" onerror="this.src='https://placehold.co/220x330?text=No+Cover'">
+                </div>
+                <div class="book-info">
+                    <div class="book-title">${book.title}</div>
+                    <div class="book-author">${book.author}</div>
+                    <button class="btn btn-primary" style="width: 100%; margin-top: auto;">Login to Read</button>
+                </div>
+            </div>
+        `;
+        }
+
+        function showMoreBooks(cat, btn) {
+          const books = window.categoryData[cat];
+          const gridId = `grid-${cat.replace(/\s+/g, "-")}`;
+          const grid = document.getElementById(gridId);
+
+          // Render the rest
+          const remainingBooks = books.slice(4);
+          grid.innerHTML += remainingBooks
+            .map((b) => createBookCard(b))
+            .join("");
+
+          // Hide the button container
+          btn.parentElement.remove();
+        }
+
+        function toggleCategory(btn) {
+          const content = btn.nextElementSibling;
+          content.classList.toggle("hidden");
+          const arrow = btn.querySelector(".category-arrow");
+          if (content.classList.contains("hidden")) {
+            arrow.textContent = "▼";
+          } else {
+            arrow.textContent = "▲";
+          }
+        }
+
+        loadLibrary();
+      </script>
+    </div>
+  </body>
+</html>
